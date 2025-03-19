@@ -1,6 +1,6 @@
-INCLUDE(FindPkgConfig)
+#INCLUDE(FindPkgConfig)
 if(NOT LIBRTLSDR_FOUND)
-  pkg_check_modules (LIBRTLSDR_PKG librtlsdr)
+  pkg_check_modules (LIBRTLSDR_PKG LibRTLSDR)
   find_path(LIBRTLSDR_INCLUDE_DIRS NAMES rtl-sdr.h
     PATHS
     ${LIBRTLSDR_PKG_INCLUDE_DIRS}

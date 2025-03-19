@@ -36,7 +36,7 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.10)
 project(rtl-entropy C)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
@@ -88,6 +88,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
 ########################################################################
 # Find build dependencies
 ########################################################################
+message(STATUS ${LibRTLSDR})
 find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibbladeRF)
