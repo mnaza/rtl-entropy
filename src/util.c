@@ -60,7 +60,7 @@ int parse_user(char *username, int *gid)
   int t;
   char *p;
   struct passwd *pws;
-  
+
   t = (unsigned int) strtol(username, &p, 10);
   if (*p != '\0') {
     pws = getpwnam(username);
@@ -78,7 +78,7 @@ int parse_group(char *groupname)
   int t;
   char *p;
   struct group *grp;
-  
+
   t = (unsigned int) strtol(groupname, &p, 10);
   if (*p != '\0') {
     grp = getgrnam(groupname);
@@ -94,7 +94,7 @@ void write_pidfile(void)
   FILE *fh = fopen(pidfile_path, "w");
   if (!fh)
     suicide("failed creating pid file %s", pidfile_path);
-  
+
   fprintf(fh, "%i", getpid());
   fclose(fh);
 }
@@ -104,7 +104,7 @@ void daemonize(void)
 {
   if (daemon(0, 0) == -1)
     suicide("fork failed");
-  
+
   write_pidfile();
 }
 #endif
@@ -136,14 +136,18 @@ double atofs(char* f)
  * Create an 256 bit key and IV using the supplied key_data. salt can be added for taste.
  * Fills in the encryption and decryption ctx objects and returns 0 on success
  **/
-int aes_init(unsigned char *key_data, int key_data_len, EVP_CIPHER_CTX *e_ctx) 
+int aes_init(unsigned char *key_data, int key_data_len, EVP_CIPHER_CTX **e_ctx)
 {
   int nrounds = 5;
   unsigned char key[32], iv[32];
   unsigned int salt[] = { 25016, 29592 };
-  EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha1(), (unsigned char *)&salt, key_data, key_data_len, nrounds, key, iv);
-  EVP_CIPHER_CTX_init(e_ctx);
-  EVP_EncryptInit_ex(e_ctx, EVP_aes_256_cbc(), NULL, key, iv);
+  if(!EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha1(), (unsigned char *)&salt, key_data, key_data_len, nrounds, key, iv)){
+    printf("sssss1\n");
+    return 1;
+  }
+  *e_ctx = EVP_CIPHER_CTX_new();
+  printf("ssssssss\n");
+  EVP_EncryptInit_ex(*e_ctx, EVP_aes_256_cbc(), NULL, key, iv);
   return 0;
 }
 
@@ -159,7 +163,7 @@ unsigned char *aes_encrypt(EVP_CIPHER_CTX *e, unsigned char *plaintext, int *len
 
   /* allows reusing of 'e' for multiple encryption cycles */
   EVP_EncryptInit_ex(e, NULL, NULL, NULL, NULL);
-  
+
   /* update ciphertext, c_len is filled with the length of ciphertext generated,
    *len is the size of plaintext in bytes */
   EVP_EncryptUpdate(e, ciphertext, &c_len, plaintext, *len);
@@ -183,7 +187,7 @@ void store_hash_data(int bit) {
     hash_data_bit_counter = 0;
     hash_data_counter++;
   }
-  
+
   if (hash_data_counter == SHA512_DIGEST_LENGTH) {
     hash_data_counter = 0;
     hash_loop=1;
@@ -195,7 +199,7 @@ int debias(int16_t one, int16_t two, int bit_index) {
   /* Debias the bit pair at bit_index */
   int ch1,ch2;
 
-  
+
   ch1 = (one >> bit_index) & 0x01;
   ch2 = (two >> bit_index) & 0x01;
   if (ch1 != ch2) {
@@ -212,5 +216,3 @@ int debias(int16_t one, int16_t two, int bit_index) {
     }
   }
 }
-
-  

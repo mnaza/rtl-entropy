@@ -102,7 +102,7 @@ unsigned int buffercounter = 0;
 
 /* Other bits */
 AES_KEY wctx;
-EVP_CIPHER_CTX *en;
+EVP_CIPHER_CTX *en = NULL;
 
 int read_config_file (FILE * infile, char ***config_options);
 void * Alloc (size_t len);
@@ -166,8 +166,8 @@ void parse_args(int argc, char ** argv)
   };
 
   char *arg_string= "a:bc:d:D:ef:g:ho:p:q:s:u:";
-    
-  optind = 1;  // start at 1 in argv, allows reuse 
+
+  optind = 1;  // start at 1 in argv, allows reuse
   while(1)
   { opt = getopt_long (argc, argv, arg_string, long_options, NULL);
     if (opt == -1)
@@ -180,14 +180,14 @@ void parse_args(int argc, char ** argv)
       case 'b':
         gflags_detach = 1;
         break;
-        
+
       case 'c':
         gflags_config = 1;
         if (config_name != NULL)
           free (config_name);
         config_name = (char *) StrnDup (optarg);
         break;
-        
+
       case 'd':
         dev_index = atoi(optarg);
         break;
@@ -199,43 +199,43 @@ void parse_args(int argc, char ** argv)
       case 'e':
         gflags_encryption = 1;
         break;
-        
+
       case 'f':
         frequency = (uint32_t)atofs(optarg);
         break;
-        
+
       case 'g':
         gid = parse_group(optarg);
         break;
-        
+
       case 'h':
         usage();
         exit(EXIT_SUCCESS);
         break;
-        
+
       case 'o':
         redirect_output = 1;
         if (output_name != NULL)
           free (output_name);
         output_name = (char *) StrnDup (optarg);
         break;
-        
+
       case 'p':
         pidfile_path = strdup(optarg);
         break;
-        
+
       case 'q':
         gflags_quiet = atoi(optarg);
         break;
-        
+
       case 's':
         samp_rate = (uint32_t)atofs(optarg);
         break;
-        
+
       case 'u':
         uid = parse_user(optarg, &gid);
         break;
-        
+
       case '?':
       default:
         fprintf(stderr, "Invalid commandline options.\n\n");
@@ -372,7 +372,7 @@ static void drop_privs(int uid, int gid)
 #endif
 
 void route_output(void) {
-  /* Redirect output if directed */   
+  /* Redirect output if directed */
   if (!redirect_output) {
     if (mkfifo(DEFAULT_OUT_FILE,S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) {
       if (errno != EEXIST) {
@@ -408,7 +408,7 @@ int nearest_gain(int target_gain){
       log_line(LOG_DEBUG," : %0.2f", gains[i]/10.0);
     err1 = abs(target_gain - close_gain);
     err2 = abs(target_gain - gains[i]);
-    if (err2 < err1) 
+    if (err2 < err1)
     { close_gain = gains[i];
     }
   }
@@ -505,10 +505,10 @@ int main(int argc, char **argv) {
   }
   if (gflags_quiet < 2)
     log_line(LOG_INFO,"Options parsed, continuing.");
-  
+
   if (gflags_detach)
     route_output();
-  
+
   if (!redirect_output)
     output = stdout;
 #if !(defined(__APPLE__) || defined(__FreeBSD__))
@@ -522,7 +522,7 @@ int main(int argc, char **argv) {
   if (!device_count) {
     suicide("No supported devices found, shutting down");
   }
-  
+
   if (gflags_quiet < 3)
     log_line(LOG_DEBUG, "Found %d device(s):", device_count);
   for (i = 0; i <(unsigned int)device_count; i++)
@@ -546,14 +546,14 @@ int main(int argc, char **argv) {
       log_line(LOG_DEBUG, "Using device %d: %s", dev_index,
         rtlsdr_get_device_name(dev_index));
   }
-  
+
   r = rtlsdr_open(&dev, dev_index);
   if (r < 0) {
     if (gflags_quiet < 3)
       log_line(LOG_DEBUG, "Failed to open rtlsdr device #%d.", dev_index);
     exit(EXIT_FAILURE);
   }
-  
+
   /* Setup Signal handlers */
   sigact.sa_handler = sighandler;
   sigemptyset(&sigact.sa_mask);
@@ -562,23 +562,23 @@ int main(int argc, char **argv) {
   sigaction(SIGTERM, &sigact, NULL);
   sigaction(SIGQUIT, &sigact, NULL);
   sigaction(SIGPIPE, &sigact, NULL);
-    
+
   /* Set the sample rate */
   r = rtlsdr_set_sample_rate(dev, samp_rate);
   if (r < 0)
     if (gflags_quiet < 3)
       log_line(LOG_DEBUG, "WARNING: Failed to set sample rate.");
-  
+
   /* Reset endpoint before we start reading from it (mandatory) */
   r = rtlsdr_reset_buffer(dev);
   if (r < 0)
     if (gflags_quiet < 3)
       log_line(LOG_DEBUG, "WARNING: Failed to reset buffers.");
-  
+
   if (gflags_quiet < 3)
     log_line(LOG_DEBUG, "Setting Frequency to %d", frequency);
   r = rtlsdr_set_center_freq(dev, (uint32_t)frequency);
-  
+
   gain = nearest_gain(gain);
   if (gflags_quiet < 3)
     log_line(LOG_DEBUG, "Setting gain to %0.2f", gain/10.0);
@@ -591,11 +591,11 @@ int main(int argc, char **argv) {
   if (r < 0)
     if (gflags_quiet < 3)
       log_line(LOG_DEBUG, "WARNING: Failed to set gain");
-  
+
   if (gflags_quiet < 3)
     log_line(LOG_DEBUG, "Doing FIPS init");
   fips_init(&fipsctx, (int)0);
-  
+
   if (gflags_quiet < 3)
     log_line(LOG_DEBUG, "Reading samples in sync mode...");
   while ( (!do_exit) || (do_exit == SIGPIPE)) {
@@ -623,17 +623,17 @@ int main(int argc, char **argv) {
         log_line(LOG_DEBUG, "ERROR: Short read, samples lost, exiting!");
       break;
     }
-    
+
     /* for each byte in the rtl-sdr read buffer
        pick least significant 6 bits
        for now:
-       debias, storing useful bits in write buffer, 
+       debias, storing useful bits in write buffer,
        and discarded bits in hash buffer
        until the write buffer is full.
        create a key by SHA512() hashing the hash buffer
        encrypt write buffer with key
        output encrypted buffer
-       
+
     */
 
     output_ready = 0;
@@ -656,16 +656,16 @@ int main(int argc, char **argv) {
 	    store_hash_data(0);
 	  }
 	}
-	
+
 	/* is byte full? */
 	if (bitcounter >= sizeof(bitbuffer[0]) * 8) {
 	  buffercounter++;
 	  bitcounter = 0;
 	}
-	
+
 	/* is buffer full? */
 	if (buffercounter >= BUFFER_SIZE) {
-	  /* We have 2500 bytes of entropy 
+	  /* We have 2500 bytes of entropy
 	     Can now send it to FIPS! */
 	  fips_result = fips_run_rng_test(&fipsctx, &bitbuffer);
 	  if (!fips_result) {
@@ -676,7 +676,7 @@ int main(int argc, char **argv) {
 		/* use key to encrypt output */
 		/* AES_set_encrypt_key(hash_buffer, 128, &wctx); */
 		/* AES_encrypt(bitbuffer, bitbuffer_old, &wctx); */
-		aes_init(hash_buffer, sizeof(hash_buffer), en);
+		aes_init(hash_buffer, sizeof(hash_buffer), &en);
 		aes_len = sizeof(bitbuffer);
 		ciphertext = aes_encrypt(en, bitbuffer, &aes_len);
 		/* yay, send it to the output! */
@@ -685,7 +685,7 @@ int main(int argc, char **argv) {
 		free(ciphertext);
 		EVP_CIPHER_CTX_cleanup(en);
 	      }
-	    } else { 
+	    } else {
 	      /* xor with old data */
 	      for (buffercounter = 0; buffercounter < BUFFER_SIZE; buffercounter++) {
 		bitbuffer[buffercounter] = bitbuffer[buffercounter] ^ bitbuffer_old[buffercounter];
@@ -720,7 +720,7 @@ int main(int argc, char **argv) {
     if (gflags_quiet < 3)
       log_line(LOG_DEBUG, "\nLibrary error %d, exiting...", r);
   }
-  
+
   rtlsdr_close(dev);
   free(buffer);
   fclose(output);

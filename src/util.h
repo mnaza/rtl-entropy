@@ -41,9 +41,7 @@ int parse_group(char *groupname);
 void write_pidfile(void);
 void daemonize(void);
 double atofs(char* f);
-int aes_init(unsigned char *key_data, int key_data_len, EVP_CIPHER_CTX *e_ctx);
+int aes_init(unsigned char *key_data, int key_data_len, EVP_CIPHER_CTX **e_ctx);
 unsigned char *aes_encrypt(EVP_CIPHER_CTX *e, unsigned char *plaintext, int *len);
 void store_hash_data(int bit);
 int debias(int16_t one, int16_t two, int bit_index);
-
-
