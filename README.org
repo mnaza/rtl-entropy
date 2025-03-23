@@ -1,0 +1,32 @@
+* requirements
+
+#+BEGIN_SRC shell
+  apt install build-essential cmake librtlsdr-dev libssl-dev libcap-dev pkgconf rng-tools5
+#+END_SRC
+
+* build
+#+BEGIN_SRC shell
+  cd rtl-entropy
+  mkdir build
+  cd build
+  cmake ../
+  make
+#+END_SRC
+
+* run
+#+BEGIN_SRC shell
+  cd build/src
+  ./rtl_entropy -s 2.4M -f 101.5M -e | rngtest -c 1280 -p > high_entropy.bin
+#+END_SRC
+
+* run in daemon mode
+#+BEGIN_SRC shell
+  cd build/src
+  ./rtl_entropy -b
+  rngd -r /var/run/rtl_entropy.fifo -W95%
+#+END_SRC
+
+and can test generator now by
+#+BEGIN_SRC shell
+  cat /dev/random | rngtest -c 1000
+#+END_SRC
